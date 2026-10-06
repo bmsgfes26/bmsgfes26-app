@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+    <html lang="ja" class="dark scroll-smooth">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>BMSG FES'26 Official Guide</title>
+
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            bmsg: {
+                                gold: '#D4AF37',
+                                goldlight: '#F3E5AB',
+                                dark: '#0A0A0A',
+                                card: '#141414',
+                                cardlight: '#1F1F1F',
+                                accent: '#FF3366'
+                            }
+                        },
+                        fontFamily: {
+                            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        }
+                    }
+                }
+            }
+        </script>
+
+        <!-- FontAwesome Icons -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+        <style>
+            body {
+                background-color: #080808;
+                color: #E5E7EB;
+                font-family: 'Inter', sans-serif;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .dock-glass {
+                background: rgba(18, 18, 18, 0.85);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(212, 175, 55, 0.25);
+            }
+
+            .gold-gradient-text {
+                background: linear-gradient(135deg, #FFF0B3 0%, #D4AF37 50%, #AA7C11 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .gold-border-glow {
+                box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+            }
+
+            .active-dock-item {
+                color: #D4AF37 !important;
+            }
+
+            .active-dock-item i {
+                transform: translateY(-2px);
+                transition: transform 0.2s ease;
+            }
+        </style>
+
+        <script>
+            /* Explicitly defining image fallback error handler in <head> so it is present when images render */
+            function handleImageError(imgElement, type) {
+                if (!imgElement) return;
+                imgElement.style.display = 'none';
+                var fallback = document.getElementById(type + '-fallback');
+                if (fallback) {
+                    fallback.classList.remove('hidden');
+                }
+            }
+
+            // Bookmark local storage keys
+            var bookmarkedIds = new Set(JSON.parse(localStorage.getItem('bmsg_bookmarks') || '[]'));
+            var filterOnlyBookmarks = false;
+            var currentZoomScale = 1;
+
+            function toggleBookmark(btn, id) {
+                var card = btn.closest('.timetable-card');
+                var icon = btn.querySelector('i');
+
+                if (bookmarkedIds.has(id)) {
+                    bookmarkedIds.delete(id);
+                    icon.className = 'fa-regular fa-bookmark text-base';
+                    btn.classList.remove('bg-bmsg-gold/20', 'text-bmsg-gold', 'border-bmsg-gold/50');
+                    btn.classList.add('bg-white/5', 'text-gray-400');
+                    showToast("マイリストから削除しました");
+                } else {
+                    bookmarkedIds.add(id);
+                    icon.className = 'fa-solid fa-bookmark text-base text-bmsg-gold';
+                    btn.classList.add('bg-bmsg-gold/20', 'text-bmsg-gold', 'border-bmsg-gold/50');
+                    btn.classList.remove('bg-white/5', 'text-gray-400');
+                    showToast("マイリストに登録しました ★");
+                }
+
+                localStorage.setItem('bmsg_bookmarks', JSON.stringify(Array.from(bookmarkedIds)));
+
+                if (filterOnlyBookmarks) {
+                    applyBookmarkFilter();
+                }
+            }
+
+            function toggleBookmarkFilter() {
+                filterOnlyBookmarks = !filterOnlyBookmarks;
+                var btn = document.getElementById('filter-bookmarks-btn');
+                
+                if (filterOnlyBookmarks) {
+                    btn.classList.add('bg-bmsg-gold', 'text-black', 'font-bold');
+                    btn.classList.remove('bg-white/5', 'text-gray-300');
+                    showToast("マイリストのみ表示中");
+                } else {
+                    btn.classList.remove('bg-bmsg-gold', 'text-black', 'font-bold');
+                    btn.classList.add('bg-white/5', 'text-gray-300');
+                    showToast("全スケジュールを表示中");
+                }
+
+                applyBookmarkFilter();
+            }
+
+            function applyBookmarkFilter() {
+                var cards = document.querySelectorAll('.timetable-card');
+                cards.forEach(function(card) {
+                    var id = card.getAttribute('data-id');
+                    if (filterOnlyBookmarks) {
+                        if (bookmarkedIds.has(id)) {
+                            card.style.display = 'flex';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    } else {
+                        card.style.display = 'flex';
+                    }
+                });
+            }
+
+            function openLightbox(type) {
+                var modal = document.getElementById('lightbox-modal');
+                var targetImg = document.getElementById('lightbox-img');
+                var caption = document.getElementById('lightbox-caption');
+
+                currentZoomScale = 1;
+                targetImg.style.transform = 'scale(1)';
+
+                if (type === 'map') {
+                    targetImg.src = '.\\map\\bmsg-map.png';
+                    caption.innerText = '会場マップ (ODAIBA, TOKYO)';
+                } else if (type === 'merch') {
+                    targetImg.src = '.\\merchandise\\bmsg-merchandise.png';
+                    caption.innerText = 'BMSG FES\'26 オフィシャルグッズ一覧';
+                }
+
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeLightbox() {
+                var modal = document.getElementById('lightbox-modal');
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            function zoomIn() {
+                currentZoomScale = Math.min(currentZoomScale + 0.3, 3);
+                updateLightboxZoom();
+            }
+
+            function zoomOut() {
+                currentZoomScale = Math.max(currentZoomScale - 0.3, 0.8);
+                updateLightboxZoom();
+            }
+
+            function resetZoom() {
+                currentZoomScale = 1;
+                updateLightboxZoom();
+            }
+
+            function updateLightboxZoom() {
+                var targetImg = document.getElementById('lightbox-img');
+                if (targetImg) {
+                    targetImg.style.transform = 'scale(' + currentZoomScale + ')';
+                    targetImg.style.transition = 'transform 0.2s ease';
+                }
+            }
+
+            function showToast(msg) {
+                var toast = document.getElementById('toast-notification');
+                var msgEl = document.getElementById('toast-message');
+                if (!toast || !msgEl) return;
+
+                msgEl.innerText = msg;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+
+                clearTimeout(window.toastTimer);
+                window.toastTimer = setTimeout(function() {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2200);
+            }
+        </script>
+    </head>
+    <body class="bg-black text-gray-200 antialiased pb-24">
+
+        <!-- Header / Hero Banner Section -->
+        <header id="hero" class="relative overflow-hidden bg-gradient-to-b from-gray-900 via-black to-black border-b border-bmsg-gold/20 pt-6 pb-8 px-4 text-center">
+            <!-- Ambient background glow -->
+            <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-80 h-80 bg-bmsg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="max-w-md mx-auto relative z-10 space-y-4">
+                
+                <!-- Date & Location Badge -->
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-bmsg-gold/10 border border-bmsg-gold/30 text-bmsg-gold text-xs font-bold tracking-widest uppercase">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>2026/10/10 ODAIBA, TOKYO</span>
+                </div>
+
+                <!-- Title -->
+                <div class="space-y-1">
+                    <h1 class="text-4xl sm:text-5xl font-black tracking-tighter gold-gradient-text uppercase">
+                        BMSG FES'26
+                    </h1>
+                </div>
+
+                <!-- Live Countdown Clock -->
+                <div class="bg-bmsg-card/80 border border-white/10 rounded-2xl p-4 backdrop-blur-md shadow-xl gold-border-glow">
+                    <div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2 flex items-center justify-center space-x-1">
+                        <i class="fa-solid fa-hourglass-half text-bmsg-gold animate-pulse"></i>
+                        <span>フェス開演まで COUNTDOWN</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="bg-black/60 rounded-xl p-2 border border-white/5">
+                            <span id="cd-days" class="block text-2xl font-black text-white font-mono">00</span>
+                            <span class="text-[9px] text-gray-400">DAYS</span>
+                        </div>
+                        <div class="bg-black/60 rounded-xl p-2 border border-white/5">
+                            <span id="cd-hours" class="block text-2xl font-black text-white font-mono">00</span>
+                            <span class="text-[9px] text-gray-400">HOURS</span>
+                        </div>
+                        <div class="bg-black/60 rounded-xl p-2 border border-white/5">
+                            <span id="cd-minutes" class="block text-2xl font-black text-white font-mono">00</span>
+                            <span class="text-[9px] text-gray-400">MINS</span>
+                        </div>
+                        <div class="bg-black/60 rounded-xl p-2 border border-white/5">
+                            <span id="cd-seconds" class="block text-2xl font-black text-bmsg-gold font-mono">00</span>
+                            <span class="text-[9px] text-gray-400">SECS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Section Jumping Pills including Merch button -->
+                <!-- <div class="pt-2 flex items-center justify-start sm:justify-center gap-2 overflow-x-auto no-scrollbar text-xs px-1">
+                    <a href="#overall-schedule" class="px-3.5 py-2 rounded-full bg-white/5 active:bg-bmsg-gold active:text-black border border-white/10 text-gray-300 font-bold whitespace-nowrap flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-clock text-bmsg-gold text-xs"></i> タイムスケジュール
+                    </a>
+                    <a href="#substage-timetable" class="px-3.5 py-2 rounded-full bg-white/5 active:bg-bmsg-gold active:text-black border border-white/10 text-gray-300 font-bold whitespace-nowrap flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-microphone text-bmsg-gold text-xs"></i> サブステージ
+                    </a>
+                    <a href="#venue-map" class="px-3.5 py-2 rounded-full bg-white/5 active:bg-bmsg-gold active:text-black border border-white/10 text-gray-300 font-bold whitespace-nowrap flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-map text-bmsg-gold text-xs"></i> 会場マップ
+                    </a>
+                    <a href="#merchandise" class="px-3.5 py-2 rounded-full bg-white/5 active:bg-bmsg-gold active:text-black border border-white/10 text-gray-300 font-bold whitespace-nowrap flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-shirt text-bmsg-gold text-xs"></i> グッズ一覧
+                    </a>
+                </div> -->
+
+            </div>
+        </header>
+
+        <!-- Main Content Single Page Flow -->
+        <main class="max-w-md mx-auto px-4 mt-6 space-y-8">
+
+            <!-- SECTION 1: OVERALL SCHEDULE -->
+            <section id="overall-schedule" class="scroll-mt-20">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
+                    <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+                        <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
+                        【タイムスケジュール】
+                    </h2>
+                    <span class="text-[10px] bg-bmsg-gold/15 text-bmsg-gold border border-bmsg-gold/30 px-2 py-0.5 rounded-full font-bold">全体日程</span>
+                </div>
+
+                <div class="bg-bmsg-card border border-white/10 rounded-2xl p-3 space-y-2 relative">
+                    
+                    <!-- 9:00 B-SIDE AREA -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 active:border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-extrabold text-base font-mono">9:00～</div>
+                        <div class="flex-1 font-bold text-sm text-white">B-SIDE AREA 開場</div>
+                        <div class="text-[9px] bg-white/10 text-gray-300 px-2 py-0.5 rounded font-bold">AREA</div>
+                    </div>
+
+                    <!-- 9:00 MEGA CAPSULE -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 active:border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-extrabold text-base font-mono">9:00～</div>
+                        <div class="flex-1 font-bold text-sm text-white">MEGA CAPSULE 整理券受付開始</div>
+                        <div class="text-[9px] bg-white/10 text-gray-300 px-2 py-0.5 rounded font-bold">整理券</div>
+                    </div>
+
+                    <!-- 9:30 GOODS -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 active:border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-extrabold text-base font-mono">9:30～</div>
+                        <div class="flex-1 font-bold text-sm text-white">公式グッズ販売開始</div>
+                        <div class="text-[9px] bg-bmsg-gold/20 text-bmsg-gold px-2 py-0.5 rounded font-bold border border-bmsg-gold/30">GOODS</div>
+                    </div>
+
+                    <!-- 10:30 SUB STAGE OPEN -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 active:border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-extrabold text-base font-mono">10:30～</div>
+                        <div class="flex-1 font-bold text-sm text-white">サブステージ 開場</div>
+                        <div class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold border border-blue-500/30">SUB</div>
+                    </div>
+
+                    <!-- 11:00 SUB STAGE START -->
+                    <div class="flex items-center p-3 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-black text-base font-mono">11:00～</div>
+                        <div class="flex-1 font-extrabold text-sm text-white flex items-center gap-1.5">
+                            <span>サブステージ 開演</span>
+                            <i class="fa-solid fa-bolt text-bmsg-gold text-xs"></i>
+                        </div>
+                        <div class="text-[9px] bg-bmsg-gold text-black px-2 py-0.5 rounded font-black">START</div>
+                    </div>
+
+                    <!-- 13:00 MAIN STAGE OPEN -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 active:border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-extrabold text-base font-mono">13:00～</div>
+                        <div class="flex-1 font-bold text-sm text-white">メインステージ 開場</div>
+                        <div class="text-[9px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded font-bold border border-red-500/30">MAIN</div>
+                    </div>
+
+                    <!-- 15:00 MAIN STAGE START -->
+                    <div class="flex items-center p-3 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/40 transition">
+                        <div class="w-16 flex-shrink-0 text-bmsg-gold font-black text-base font-mono">15:00～</div>
+                        <div class="flex-1 font-extrabold text-sm text-white flex items-center gap-1.5">
+                            <span>メインステージ 開演</span>
+                            <i class="fa-solid fa-star text-bmsg-gold text-xs"></i>
+                        </div>
+                        <div class="text-[9px] bg-bmsg-gold text-black px-2 py-0.5 rounded font-black">START</div>
+                    </div>
+
+                    <!-- ~20:00 CLOSE -->
+                    <div class="flex items-center p-3 rounded-xl bg-white/5 border border-white/5 transition">
+                        <div class="w-16 flex-shrink-0 text-gray-400 font-extrabold text-base font-mono">～20:00</div>
+                        <div class="flex-1 font-bold text-sm text-gray-300">公演終了</div>
+                        <div class="text-[9px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-bold">FINISH</div>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- SECTION 2: SUBSTAGE TIMETABLE -->
+            <section id="substage-timetable" class="scroll-mt-20">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
+                    <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+                        <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
+                        【サブステージ タイムテーブル】
+                    </h2>
+                    <button id="filter-bookmarks-btn" onclick="toggleBookmarkFilter()" class="text-[10px] bg-white/5 text-gray-300 border border-white/20 px-2.5 py-1 rounded-full transition flex items-center gap-1 active:scale-95">
+                        <i class="fa-solid fa-star text-bmsg-gold"></i> マイリスト
+                    </button>
+                </div>
+
+                <div class="space-y-2.5">
+                    
+                    <!-- BANVOX (11:00) -->
+                    <div data-id="sub-1" class="timetable-card bg-bmsg-card border border-white/10 active:border-bmsg-gold/50 rounded-2xl p-3.5 flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/30 flex items-center justify-center text-bmsg-gold flex-shrink-0">
+                                <i class="fa-solid fa-compact-disc text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] text-bmsg-gold font-extrabold font-mono">11:00～</div>
+                                <div class="text-base font-black text-white leading-tight">BANVOX</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">OPENING DJ PERFORMANCE</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleBookmark(this, 'sub-1')" class="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 transition active:scale-95" title="お気に入り登録">
+                            <i class="fa-regular fa-bookmark text-base"></i>
+                        </button>
+                    </div>
+
+                    <!-- ODORI (11:30) -->
+                    <div data-id="sub-2" class="timetable-card bg-bmsg-card border border-white/10 active:border-bmsg-gold/50 rounded-2xl p-3.5 flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/30 flex items-center justify-center text-bmsg-gold flex-shrink-0">
+                                <i class="fa-solid fa-person-dots-from-line text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] text-bmsg-gold font-extrabold font-mono">11:30～</div>
+                                <div class="text-base font-black text-white leading-tight">ODORI</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">DANCE PERFORMANCE</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleBookmark(this, 'sub-2')" class="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 transition active:scale-95" title="お気に入り登録">
+                            <i class="fa-regular fa-bookmark text-base"></i>
+                        </button>
+                    </div>
+
+                    <!-- BANVOX (11:50) -->
+                    <div data-id="sub-3" class="timetable-card bg-bmsg-card border border-white/10 active:border-bmsg-gold/50 rounded-2xl p-3.5 flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/30 flex items-center justify-center text-bmsg-gold flex-shrink-0">
+                                <i class="fa-solid fa-sliders text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] text-bmsg-gold font-extrabold font-mono">11:50～</div>
+                                <div class="text-base font-black text-white leading-tight">BANVOX</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">SPECIAL DJ SET</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleBookmark(this, 'sub-3')" class="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 transition active:scale-95" title="お気に入り登録">
+                            <i class="fa-regular fa-bookmark text-base"></i>
+                        </button>
+                    </div>
+
+                    <!-- BMSG TRAINEE (12:20) -->
+                    <div data-id="sub-4" class="timetable-card bg-bmsg-card border border-white/10 active:border-bmsg-gold/50 rounded-2xl p-3.5 flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-11 h-11 rounded-xl bg-bmsg-gold/10 border border-bmsg-gold/30 flex items-center justify-center text-bmsg-gold flex-shrink-0">
+                                <i class="fa-solid fa-fire-flame-curved text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] text-bmsg-gold font-extrabold font-mono">12:20～</div>
+                                <div class="text-base font-black text-white leading-tight">BMSG TRAINEE</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">LIVE PERFORMANCE</div>
+                            </div>
+                        </div>
+                        <button onclick="toggleBookmark(this, 'sub-4')" class="p-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 transition active:scale-95" title="お気に入り登録">
+                            <i class="fa-regular fa-bookmark text-base"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+
+            <!-- SECTION 3: VENUE MAP -->
+            <section id="venue-map" class="scroll-mt-20">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
+                    <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+                        <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
+                        会場マップ
+                    </h2>
+                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center text-bmsg-gold"></i> タップで拡大
+                    </span>
+                </div>
+
+                <div class="bg-bmsg-card border border-white/10 rounded-2xl p-3 text-center relative">
+                    
+                    <!-- Image Container with Lightbox Trigger -->
+                    <div class="relative overflow-hidden rounded-xl bg-black/80 min-h-[180px] flex items-center justify-center cursor-pointer group active:scale-[0.99] transition" onclick="openLightbox('map')">
+                        <!-- Venue Map Image Embed -->
+                        <img id="map-image-element"
+                            src=".\map\bmsg-map.png" 
+                            alt="会場マップ"
+                            onerror="handleImageError(this, 'map')"
+                            class="w-full h-auto max-h-[500px] object-contain rounded-xl">
+                        
+                        <!-- Fallback UI if local image file is absent -->
+                        <div id="map-fallback" class="hidden w-full p-4 text-left">
+                            <div class="border border-bmsg-gold/30 rounded-xl p-4 bg-gradient-to-br from-bmsg-cardlight to-black">
+                                <div class="flex justify-between items-center mb-3">
+                                    <div>
+                                        <span class="text-[10px] text-bmsg-gold font-bold uppercase">VENUE MAP PREVIEW</span>
+                                        <h3 class="text-base font-bold text-white">お台場特設会場 エリアマップ</h3>
+                                    </div>
+                                    <span class="text-[9px] bg-white/10 text-gray-300 px-1.5 py-0.5 rounded">マッププレビュー</span>
+                                </div>
+
+                                <div class="space-y-2 my-2">
+                                    <div class="bg-red-950/40 border border-red-500/40 p-2.5 rounded-lg">
+                                        <div class="text-[10px] font-bold text-red-400">MAIN STAGE</div>
+                                        <div class="text-xs font-black text-white">メインステージ</div>
+                                        <p class="text-[10px] text-gray-400">開場 13:00 / 開演 15:00</p>
+                                    </div>
+                                    <div class="bg-bmsg-gold/10 border border-bmsg-gold/40 p-2.5 rounded-lg">
+                                        <div class="text-[10px] font-bold text-bmsg-gold">SUB STAGE</div>
+                                        <div class="text-xs font-black text-white">サブステージ</div>
+                                        <p class="text-[10px] text-gray-400">開場 10:30 / 開演 11:00</p>
+                                    </div>
+                                    <div class="bg-blue-950/40 border border-blue-500/40 p-2.5 rounded-lg">
+                                        <div class="text-[10px] font-bold text-blue-400">B-SIDE AREA</div>
+                                        <div class="text-xs font-black text-white">グッズ・カプセルガチャエリア</div>
+                                        <p class="text-[10px] text-gray-400">9:00 OPEN</p>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-2 text-center">※画像ファイル (<code class="text-bmsg-gold">.\map\bmsg-map.png</code>) を同フォルダ内に配置すると表示されます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2.5 flex items-center justify-between text-[11px] text-gray-400 px-1">
+                        <span>ODAIBA, TOKYO 特設会場</span>
+                </div>
+            </section>
+
+
+            <!-- SECTION 4: MERCHANDISE -->
+            <section id="merchandise" class="scroll-mt-20">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
+                    <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+                        <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
+                        グッズ一覧
+                    </h2>
+                    <span class="text-[10px] text-gray-400 flex items-center gap-1">
+                        <i class="fa-solid fa-up-right-and-down-left-from-center text-bmsg-gold"></i> タップで拡大
+                    </span>
+                </div>
+
+                <div class="bg-bmsg-card border border-white/10 rounded-2xl p-3 text-center relative">
+                    
+                    <!-- Image Container with Lightbox Trigger -->
+                    <div class="relative overflow-hidden rounded-xl bg-black/80 min-h-[180px] flex items-center justify-center cursor-pointer group active:scale-[0.99] transition" onclick="openLightbox('merch')">
+                        <!-- Merchandise Image Embed -->
+                        <img id="merch-image-element"
+                            src=".\merchandise\bmsg-merchandise.png" 
+                            alt="グッズ一覧"
+                            onerror="handleImageError(this, 'merch')"
+                            class="w-full h-auto max-h-[500px] object-contain rounded-xl">
+
+                        <!-- Fallback UI if local image file is absent -->
+                        <div id="merch-fallback" class="hidden w-full p-4 text-left">
+                            <div class="border border-bmsg-gold/30 rounded-xl p-6 bg-gradient-to-br from-bmsg-cardlight to-black text-center">
+                                <i class="fa-solid fa-shirt text-4xl text-bmsg-gold mb-2 block"></i>
+                                <h3 class="text-base font-bold text-white mb-1">BMSG FES'26 OFFICIAL MERCHANDISE</h3>
+                                <p class="text-[11px] text-gray-400">9:30～ 販売開始 / B-SIDE AREA</p>
+                                <p class="text-[10px] text-gray-400 mt-4">※画像ファイル (<code class="text-bmsg-gold">.\merchandise\bmsg-merchandise.png</code>) を同フォルダ内に配置すると表示されます。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-2.5 flex items-center justify-between text-[11px] text-gray-400 px-1">
+                        <span>販売開始 9:30～</span>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Mobile Fixed Floating Bottom Dock Navigation -->
+        <nav class="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md dock-glass rounded-2xl px-2 py-2 shadow-2xl">
+            <div class="grid grid-cols-5 text-center text-[10px] font-bold">
+                <a href="#hero" class="dock-item flex flex-col items-center py-1 text-gray-400 active:text-bmsg-gold transition">
+                    <i class="fa-solid fa-house text-base mb-0.5"></i>
+                    <span>トップ</span>
+                </a>
+                <a href="#overall-schedule" class="dock-item flex flex-col items-center py-1 text-gray-400 active:text-bmsg-gold transition">
+                    <i class="fa-solid fa-clock text-base mb-0.5"></i>
+                    <span>全体日程</span>
+                </a>
+                <a href="#substage-timetable" class="dock-item flex flex-col items-center py-1 text-gray-400 active:text-bmsg-gold transition">
+                    <i class="fa-solid fa-microphone text-base mb-0.5"></i>
+                    <span>サブステージTT</span>
+                </a>
+                <a href="#venue-map" class="dock-item flex flex-col items-center py-1 text-gray-400 active:text-bmsg-gold transition">
+                    <i class="fa-solid fa-map text-base mb-0.5"></i>
+                    <span>マップ</span>
+                </a>
+                <a href="#merchandise" class="dock-item flex flex-col items-center py-1 text-gray-400 active:text-bmsg-gold transition">
+                    <i class="fa-solid fa-shirt text-base mb-0.5"></i>
+                    <span>グッズ</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Image Lightbox Modal with Pinch/Zoom Controls -->
+        <div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/95 hidden flex flex-col backdrop-blur-md select-none">
+            <!-- Top Control Bar -->
+            <div class="flex items-center justify-between p-4 bg-black/80 border-b border-white/10 z-10">
+                <span id="lightbox-caption" class="text-xs text-bmsg-gold font-mono truncate max-w-[200px]"></span>
+                
+                <div class="flex items-center space-x-2">
+                    <button onclick="zoomIn()" class="w-9 h-9 rounded-full bg-white/10 active:bg-bmsg-gold active:text-black text-white flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                    <button onclick="zoomOut()" class="w-9 h-9 rounded-full bg-white/10 active:bg-bmsg-gold active:text-black text-white flex items-center justify-center text-sm">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <button onclick="resetZoom()" class="w-9 h-9 rounded-full bg-white/10 active:bg-bmsg-gold active:text-black text-white flex items-center justify-center text-xs font-bold">
+                        100%
+                    </button>
+                    <button onclick="closeLightbox()" class="w-9 h-9 rounded-full bg-bmsg-gold text-black flex items-center justify-center text-base font-bold ml-2">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lightbox Zoom Area -->
+            <div class="flex-1 overflow-auto flex items-center justify-center p-2 text-center" onclick="closeLightbox()">
+                <img id="lightbox-img" src="" alt="Zoomed view" class="max-w-full max-h-full object-contain mx-auto my-auto" onclick="event.stopPropagation()">
+            </div>
+            
+            <div class="p-3 bg-black/80 text-center text-[11px] text-gray-400 border-t border-white/10">
+                ボタンで拡大・縮小 | 背景タップで閉じる
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast-notification" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out pointer-events-none w-[88%] max-w-sm">
+            <div class="bg-black/90 text-bmsg-gold border border-bmsg-gold/50 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-md flex items-center justify-center space-x-2 text-center">
+                <i class="fa-solid fa-circle-info text-xs"></i>
+                <span id="toast-message" class="text-xs font-bold text-white"></span>
+            </div>
+        </div>
+
+        <footer class="mt-8 pb-4 text-center text-[10px] text-gray-500">
+            <p class="mt-0.5">2026.10.10 [SAT] ODAIBA, TOKYO</p>
+        </footer>
+
+        <script>
+            // Target Date: 2026/10/10 15:00:00 (JST)
+            const targetDate = new Date('2026-10-10T15:00:00+09:00').getTime();
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                if (diff <= 0) {
+                    document.getElementById('cd-days').innerText = "00";
+                    document.getElementById('cd-hours').innerText = "00";
+                    document.getElementById('cd-minutes').innerText = "00";
+                    document.getElementById('cd-seconds').innerText = "00";
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+                document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+                document.getElementById('cd-minutes').innerText = String(minutes).padStart(2, '0');
+                document.getElementById('cd-seconds').innerText = String(seconds).padStart(2, '0');
+            }
+
+            // Highlight active dock item based on scroll position
+            function updateActiveDock() {
+            const sections = document.querySelectorAll('section');
+            const dockItems = document.querySelectorAll('.dock-item');
+
+            let currentSection = '';
+
+            // 最下部までスクロールした場合は merchandise を強制的にアクティブ
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 20) {
+                currentSection = 'merchandise';
+            } else {
+                sections.forEach(sec => {
+                    const rect = sec.getBoundingClientRect();
+                    const top = rect.top;
+
+                    if (top <= 120) {
+                        currentSection = sec.getAttribute('id');
+                    }
+                });
+            }
+
+    dockItems.forEach(item => {
+        item.classList.remove('active-dock-item');
+
+        const href = item.getAttribute('href');
+
+        if (
+            href === '#' + currentSection ||
+            (currentSection === '' && href === '#hero')
+        ) {
+            item.classList.add('active-dock-item');
+        }
+    });
+}
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+            window.addEventListener('scroll', updateActiveDock);
+            
+            // Restore bookmarked visual states on page load
+            bookmarkedIds.forEach(id => {
+                const card = document.querySelector(`.timetable-card[data-id="${id}"]`);
+                if (card) {
+                    const btn = card.querySelector('button');
+                    const icon = btn.querySelector('i');
+                    icon.className = 'fa-solid fa-bookmark text-base text-bmsg-gold';
+                    btn.classList.add('bg-bmsg-gold/20', 'text-bmsg-gold', 'border-bmsg-gold/50');
+                    btn.classList.remove('bg-white/5', 'text-gray-400');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

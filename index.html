@@ -286,16 +286,39 @@
         <!-- Main Content Single Page Flow -->
         <main class="max-w-md mx-auto px-4 mt-6 space-y-8">
 
-            <!-- SECTION 0: PREPLAYLIST (Apple Music Player) -->
-            <section id="playlist" class="scroll-mt-20">
-                <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
-                    <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
-                        <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
-                        【予習プレイリスト】
-                    </h2>
-                    <span class="text-[10px] bg-bmsg-gold/15 text-bmsg-gold border border-bmsg-gold/30 px-2 py-0.5 rounded-full font-bold">Apple Music</span>
+            <!-- SECTION 0: PREPLAYLIST (Apple Music Direct Link) -->
+        <section id="playlist" class="scroll-mt-20">
+            <div class="flex items-center justify-between mb-3 pb-2 border-b border-bmsg-gold/30">
+                <h2 class="text-lg font-black tracking-tight flex items-center gap-2 text-white">
+                    <span class="w-2 h-5 bg-bmsg-gold rounded-full inline-block"></span>
+                    【予習プレイリスト】
+                </h2>
+                <span class="text-[10px] bg-bmsg-gold/15 text-bmsg-gold border border-bmsg-gold/30 px-2 py-0.5 rounded-full font-bold">Apple Music</span>
+            </div>
+
+            <div class="bg-bmsg-card border border-white/10 rounded-2xl p-4 shadow-xl flex items-center justify-between gap-3">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-red-600 flex items-center justify-center text-white text-xl shadow-lg flex-shrink-0">
+                        <i class="fa-solid fa-music"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold text-gray-300">BMSG FES'26</div>
+                        <div class="text-base font-black text-white leading-tight">公式 予習プレイリスト</div>
+                    </div>
                 </div>
 
+                <a href="https://music.apple.com/jp/playlist/bmsg-fes26%E4%BA%88%E7%BF%92%E3%83%97%E3%83%AC%E3%82%A4%E3%83%AA%E3%82%B9%E3%83%88/pl.u-gxblkK1T58qm1WW" 
+                   target="_blank" 
+                   rel="noopener noreferrer" 
+                   class="bg-bmsg-gold hover:bg-bmsg-goldlight text-black font-black text-xs px-3.5 py-2.5 rounded-xl transition-all duration-200 shadow-md flex items-center gap-1.5 whitespace-nowrap active:scale-95 flex-shrink-0">
+                    <span>開く</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                </a>
+            </div>
+        </section>
+
+            <!-- SECTION 0: PREPLAYLIST (Apple Music Player) -->
+            <section id="playlist" class="scroll-mt-20">
                 <div class="bg-bmsg-card border border-white/10 rounded-2xl p-2 shadow-xl overflow-hidden">
                     <iframe 
                         allow="autoplay *; encrypted-media *;" 
